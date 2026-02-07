@@ -59,8 +59,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 zip-safe = false
 
+[tool.setuptools.packages.find]
+where = ["src/"]
+include = ["stsci.imagestats"]
+
 [tool.setuptools_scm]
-write_to = "stsci/imagestats/_version.py"
+write_to = "src/stsci/imagestats/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6"
