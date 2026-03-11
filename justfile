@@ -49,7 +49,9 @@ build: build-clean venv
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    if ([[ "{{BUILD_DISABLE}}" == "0" ]] || [[ "{{BUILD_EDITABLE}}" == "0" ]]); then
+    if ([[ "{{BUILD_DISABLE}}" == "1" ]] || [[ "{{BUILD_EDITABLE}}" == "1" ]]); then
+        :
+    else
         if [[ "{{BUILD_CIBUILDWHEEL}}" == "1" ]]; then
             if ! docker ps &>/dev/null; then
                 echo "Cannot use cibuildwheel because Docker is either not installed, or broken" >&2
@@ -73,10 +75,55 @@ build-clean:
     fi
 
 test-deps:
+    #!/usr/bin/env bash
+    guess_plat_arch() {
+        local output=""
+        local plat_real=$(uname -s)
+        local arch_real=$(uname -m)
+        local arch="$arch_real"
+        local plat="$plat_real"
+        case "$plat_real" in
+            Linux)
+                plat=linux
+                ;;
+            Darwin)
+                plat=macosx
+                ;;
+            Win*)
+                plat=win
+                ;;
+        esac
+
+        arch="$arch_real"
+        case "$arch_real" in
+            i*86)
+                arch=32
+                ;;
+        esac
+
+        case "$plat" in
+            linux|darwin)
+                output="*$plat*_*$arch"
+                ;;
+            win)
+                if [[ "$arch" == "x86_64" ]]; then
+                    plat=amd64
+                    output="*$plat_$arch"
+                elif [[ "$arch" == "32" ]]; then
+                    output="*$plat$arch"
+                fi
+                ;;
+        esac
+        echo "$output"
+    }
+
+
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
         {{test_pip_cmd}} install -e ${project_dir}[test]; \
     else \
-        fn=$(echo {{dist_dir}}/*.whl); \
+        guess=$(guess_plat_arch); \
+        echo "GUESS: $guess"; \
+        fn=$(find {{dist_dir}} -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
         {{test_pip_cmd}} install "$fn"[test]; \
     fi
 
