@@ -49,27 +49,28 @@ build: build-clean venv
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    ([[ "{{BUILD_DISABLE}}" == 1 ]] || [[ "{{BUILD_EDITABLE}}" == "1" ]]) && exit 0
+    if ([[ "{{BUILD_DISABLE}}" == "0" ]] || [[ "{{BUILD_EDITABLE}}" == "0" ]]); then
+        if [[ "{{BUILD_CIBUILDWHEEL}}" == "1" ]]; then
+            if ! docker ps &>/dev/null; then
+                echo "Cannot use cibuildwheel because Docker is either not installed, or broken" >&2
+                exit 1
+            fi
+            {{build_pip_cmd}} install cibuildwheel
+            v=$({{build_python_cmd}} -V | awk '{ print $2 }')
+            v_compact=$(echo "${v%.*}" | tr -d '.')
+            manylinux_target=cp${v_compact}-manylinux_{{arch()}}
 
-    if [[ "{{BUILD_CIBUILDWHEEL}}" == 1 ]]; then
-        if ! docker ps &>/dev/null; then
-            echo "Cannot use cibuildwheel because Docker is either not installed, or broken" >&2
-            exit 1
+            {{build_python_cmd}} -m cibuildwheel --output-dir "$dist_dir" --only "${manylinux_target}"
+        else
+            {{build_pip_cmd}} install build wheel
+            {{build_python_cmd}} -m build -w $project_dir
         fi
-        {{build_pip_cmd}} install cibuildwheel
-        v=$({{build_python_cmd}} -V | awk '{ print $2 }')
-        v_compact=$(echo "${v%.*}" | tr -d '.')
-        manylinux_target=cp${v_compact}-manylinux_{{arch()}}
-
-        {{build_python_cmd}} -m cibuildwheel --output-dir "$dist_dir" --only "${manylinux_target}"
-    else
-        {{build_pip_cmd}} install build wheel
-        {{build_python_cmd}} -m build -w $project_dir
     fi
 
 build-clean:
-    [[ "{{BUILD_DISABLE}}" == "1" ]] && exit 0
-    rm -rf "{{dist_dir}}"
+    if [[ "{{BUILD_DISABLE}}" == "0" ]]; then \
+        rm -rf "{{dist_dir}}"; \
+    fi
 
 test-deps:
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
@@ -85,7 +86,7 @@ test +TARGET='x': build test-deps
     set -euxo pipefail
 
     site_packages=$({{test_python_cmd}} -c 'import site; print(site.getsitepackages()[0])')
-    if [[ "{{BUILD_EDITABLE}}" == 1 ]]; then
+    if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then
         install_dir="${project_dir}/src"
     else
         install_dir="${site_packages}"/stsci/imagestats
