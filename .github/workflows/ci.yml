@@ -39,6 +39,10 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: List files
+        run: |
+          find dist -name '*.whl'
+
       - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
