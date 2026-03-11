@@ -41,7 +41,7 @@ jobs:
 
       - name: List files
         run: |
-          CWD is $(pwd)
+          echo CWD is $(pwd)
           find dist -name '*.whl'
 
       - name: Install Python ${{ matrix.python-version }}
