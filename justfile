@@ -45,6 +45,8 @@ dev-deps:
 
 build: build-clean venv
     #!/usr/bin/env bash
+    set -euxo pipefail
+
     ([[ "{{BUILD_DISABLE}}" == 1 ]] || [[ "{{BUILD_EDITABLE}}" == "1" ]]) && exit 0
 
     if [[ "{{BUILD_CIBUILDWHEEL}}" == 1 ]]; then
@@ -77,6 +79,7 @@ test-deps:
 [positional-arguments]
 test +TARGET='x': build test-deps
     #!/usr/bin/env bash
+    set -euxo pipefail
 
     site_packages=$({{test_python_cmd}} -c 'import site; print(site.getsitepackages()[0])')
     if [[ "{{BUILD_EDITABLE}}" == 1 ]]; then
@@ -86,7 +89,7 @@ test +TARGET='x': build test-deps
     fi
 
     args=(
-        "--pyargs ${package_name}"
+        "--pyargs ${project_name}"
         "--junitxml=result.xml"
     )
     for target in {{TARGET}}; do
