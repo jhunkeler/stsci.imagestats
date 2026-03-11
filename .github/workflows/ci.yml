@@ -41,6 +41,7 @@ jobs:
 
       - name: List files
         run: |
+          CWD is $(pwd)
           find dist -name '*.whl'
 
       - name: Install Python ${{ matrix.python-version }}
@@ -53,6 +54,7 @@ jobs:
 
       - name: Test ${{ matrix.test-target }}
         run: |
+          find . -name '*.whl'
           just --set BUILD_DISABLE 1 test ${{ matrix.test-target }}
 
     #secrets:
