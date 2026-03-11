@@ -49,7 +49,7 @@ jobs:
 
       - name: Test ${{ matrix.test-target }}
         run: |
-          just test ${{ matrix.test-target }}
+          just --set BUILD_DISABLE 1 test ${{ matrix.test-target }}
 
     #secrets:
     #  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
