@@ -3,11 +3,12 @@ name: CI
 on:
   push:
     branches:
-    - main
-    - 'v*'
+      - main
+      - 'v*'
     tags:
-    - '*'
+      - '*'
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: ./.github/workflows/build.yml
 
