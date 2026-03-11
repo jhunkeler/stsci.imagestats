@@ -68,6 +68,7 @@ build: build-clean venv
     fi
 
 build-clean:
+    [[ "{{BUILD_DISABLE}}" == "1" ]] && exit 0
     rm -rf "{{dist_dir}}"
 
 test-deps:
