@@ -15,47 +15,36 @@ concurrency:
 
 jobs:
   tests:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@9f1fedda61294df4c004c05519a3fbf3b8e1f32f  # v2.3.1
-    with:
-      envs: |
-        - name: Security audit
-          linux: bandit
+    runs-on: ${{ matrix.os }}
 
-        - name: Python 3.9 (Linux; numpy 1.22)
-          linux: py39-test-numpy122
-          posargs: -v
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.11, 3.12, 3.13, 3.14]
+        test-target: ['', 'cov', 'numpy122', 'numpy125']
 
-        - name: Python 3.10 (Linux; numpy 1.25)
-          linux: py310-test-numpy125
-          posargs: -v
+    steps:
+      - uses: actions/checkout@v6
 
-        - name: Python 3.11 (Windows)
-          windows: py311-test
-          posargs: -v
+      - uses: ./.github/workflows/build.yml
 
-        - name: Python 3.12 (OSX)
-          macos: py312-test
-          posargs: -v
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
 
-        - name: Python 3.13 (OSX)
-          macos: py313-test
-          posargs: -v
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: '${{ matrix.python-version }}'
 
-        - name: Python 3.13 (Windows)
-          windows: py313-test
-          posargs: -v
+      - name: Install Just
+        uses: extractions/setup-just@v3
 
-        # `tox` does not currently respect `requires-python` versions when creating testing environments;
-        # if this breaks, add an upper pin to `requires-python` and revert this py3 to the latest working version
+      - name: Test ${{ matrix.test-target }}
+        run: |
+          just test ${{ matrix.test-target }}
 
-        - name: Python 3.14 (Linux) with coverage
-          linux: py314-test-cov
-          posargs: -v
-          coverage: codecov
-          pytest-results-summary: true
-
-        - name: Python 3 (Linux with dev dependencies)
-          linux: py3-test-devdeps
-          posargs: -v
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
