@@ -1,3 +1,5 @@
+set shell := ["bash", "-uc"]
+
 export BUILD_CIBUILDWHEEL := "0"
 export BUILD_EDITABLE := "0"
 export BUILD_DISABLE := "0"
