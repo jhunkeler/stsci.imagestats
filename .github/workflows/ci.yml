@@ -9,18 +9,18 @@ on:
       - '*'
   pull_request:
   workflow_dispatch:
-  workflow_run:
-    workflows: [build]
-    types:
-      - completed
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  build:
+    - uses: ./.github/workflows/build.yml
+
   tests:
     runs-on: ${{ matrix.os }}
+    needs: [build]
 
     strategy:
       matrix:
