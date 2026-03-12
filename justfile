@@ -7,6 +7,7 @@ export BUILD_DISABLE := "0"
 export project_name := "stsci.imagestats"
 export project_dir := justfile_directory()
 export dist_dir := f"{{project_dir}}/dist"
+export test_jail := f"{{project_dir}}/.test_jail"
 
 build_venv_dir := f"{{project_dir}}/.venv/build"
 build_python_cmd := f"{{build_venv_dir}}/bin/python"
@@ -71,11 +72,14 @@ build: build-clean venv
 
 build-clean:
     if [[ "{{BUILD_DISABLE}}" == "0" ]]; then \
-        rm -rf "{{dist_dir}}"; \
+        rm -rf "$dist_dir"; \
+        rm -rf "$project_dir"/*.egg-info; \
+        rm -rf "$project_dir"/build; \
     fi
 
 test-deps:
     #!/usr/bin/env bash
+    set -euxo pipefail
     guess_plat_arch() {
         local output=""
         local plat_real=$(uname -s)
@@ -124,7 +128,7 @@ test-deps:
         guess=$(guess_plat_arch); \
         echo "GUESS: $guess"; \
         fn=$(find {{dist_dir}} -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
-        {{test_pip_cmd}} install "$fn"[test]; \
+        {{test_pip_cmd}} install --force-reinstall "$fn"[test]; \
     fi
 
 [positional-arguments]
@@ -132,16 +136,21 @@ test +TARGET='x': build test-deps
     #!/usr/bin/env bash
     set -euxo pipefail
 
+    mkdir -p "$test_jail"
+    cd "$test_jail"
+    export HOME="$test_jail"
+
     site_packages=$({{test_python_cmd}} -c 'import site; print(site.getsitepackages()[0])')
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then
-        install_dir="${project_dir}/src"
+        install_dir="${project_dir}"/src
     else
         install_dir="${site_packages}"/stsci/imagestats
     fi
 
     args=(
         "--pyargs ${project_name}"
-        "--junitxml=result.xml"
+        "--basetemp=${HOME}/basetemp"
+        "--junitxml=${project_dir}/result.xml"
     )
     for target in {{TARGET}}; do
         if [[ "$target" == "x" ]]; then
@@ -152,15 +161,16 @@ test +TARGET='x': build test-deps
             args+=(
                 "--cov=${install_dir}"
                 "--cov-config=${project_dir}/pyproject.toml"
-                "--cov-report=xml:coverage.xml"
+                "--cov-report=xml:${project_dir}/coverage.xml"
             )
         fi
 
-        just ${target}-deps || exit $?
+        just ${target}-deps
     done
-    set -x
+
     {{test_pytest_cmd}} ${args[@]} ${install_dir}
 
 test-clean:
     rm -f coverage.xml
     rm -f result.xml
+    rm -rf "$test_jail"
