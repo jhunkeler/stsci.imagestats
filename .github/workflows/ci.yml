@@ -27,6 +27,15 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.11, 3.12, 3.13, 3.14]
         test-target: ['', 'cov', 'numpy122', 'numpy125']
+        exclude:
+          - python-version: 3.13
+            test-target: 'numpy122'
+          - python-version: 3.13
+            test-target: 'numpy125'
+          - python-version: 3.14
+            test-target: 'numpy122'
+          - python-version: 3.14
+            test-target: 'numpy125'
 
     steps:
       - uses: actions/checkout@v6
