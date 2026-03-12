@@ -106,7 +106,7 @@ guess-wheel-triple:
         esac
 
         case "$plat" in
-            linux|darwin)
+            linux|macosx)
                 output="*$plat*_*$arch"
                 ;;
             win)
