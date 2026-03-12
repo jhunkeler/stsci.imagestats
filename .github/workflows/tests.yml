@@ -24,7 +24,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         test-target: ['']
         include:
@@ -54,11 +54,6 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: List files
-        run: |
-          echo CWD is $(pwd)
-          find dist -name '*.whl'
-
       - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -69,7 +64,6 @@ jobs:
 
       - name: Test ${{ matrix.test-target }}
         run: |
-          find . -name '*.whl'
           just --set BUILD_DISABLE 1 test ${{ matrix.test-target }}
 
     #secrets:
