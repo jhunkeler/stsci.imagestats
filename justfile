@@ -25,9 +25,9 @@ clean: venv-clean build-clean test-clean
 
 venv:
     [[ -d {{build_venv_dir}} ]] || python -m venv {{build_venv_dir}}
-    {{build_pip_cmd}} install --upgrade pip
+    {{build_pip_cmd}} install --upgrade pip setuptools
     [[ -d {{test_venv_dir}} ]] || python -m venv {{test_venv_dir}}
-    {{test_pip_cmd}} install --upgrade pip
+    {{test_pip_cmd}} install --upgrade pip setuptools
 
 venv-clean:
     rm -rf {{build_venv_dir}}
