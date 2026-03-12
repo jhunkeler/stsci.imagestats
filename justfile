@@ -77,10 +77,10 @@ build-clean:
         rm -rf "$project_dir"/build; \
     fi
 
-test-deps:
+guess-wheel-triple:
     #!/usr/bin/env bash
     set -euxo pipefail
-    guess_plat_arch() {
+    guess_wheel_triple() {
         local output=""
         local plat_real=$(uname -s)
         local arch_real=$(uname -m)
@@ -120,12 +120,14 @@ test-deps:
         esac
         echo "$output"
     }
+    guess_wheel_triple
 
 
+test-deps:
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
         {{test_pip_cmd}} install -e ${project_dir}[test]; \
     else \
-        guess=$(guess_plat_arch); \
+        guess=$(just -q guess-wheel-triple); \
         echo "GUESS: $guess"; \
         fn=$(find {{dist_dir}} -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
         {{test_pip_cmd}} install --force-reinstall "$fn"[test]; \
