@@ -26,12 +26,21 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.10, 3.11, 3.12, 3.13, 3.14]
-        test-target: ['', 'cov']
+        test-target: []
         include:
-          - python-version: 3.10
-            test-target: 'numpy122'
-          - python-version: 3.10
-            test-target: 'numpy125'
+          - os: ubuntu-latest
+            python-version: 3.14
+            test-target: cov
+          - os: ubuntu-latest
+            python-version: 3.14
+            test-target: dev
+
+          - os: ubuntu-latest
+            python-version: 3.10
+            test-target: numpy125
+          - os: ubuntu-latest
+            python-version: 3.10
+            test-target: numpy122
 
 
     steps:
