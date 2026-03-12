@@ -29,18 +29,18 @@ jobs:
         test-target: ['']
         include:
           - os: ubuntu-latest
-            python-version: 3.14
+            python-version: '3.14'
             test-target: cov
           - os: ubuntu-latest
-            python-version: 3.14
+            python-version: '3.14'
             test-target: dev
 
           - os: ubuntu-latest
-            python-version: 3.10
-            test-target: numpy125
+            python-version: '3.10'
+            test-target: 'numpy125'
           - os: ubuntu-latest
-            python-version: 3.10
-            test-target: numpy122
+            python-version: '3.10'
+            test-target: 'numpy122'
 
 
     steps:
