@@ -16,7 +16,12 @@ export BUILD_EDITABLE := "0"
 export BUILD_DISABLE := "0"
 
 export project_name := "stsci.imagestats"
-export project_dir := invocation_directory_native()
+export project_dir := if os() == 'windows' {
+    shell('cygpath --windows $1', justfile_directory())
+} else {
+    justfile_directory()
+}
+#export project_dir := justfile_directory()
 export dist_dir := f"{{project_dir}}/dist"
 export test_jail := f"{{project_dir}}/.test_jail"
 
