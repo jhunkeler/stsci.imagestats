@@ -65,7 +65,9 @@ jobs:
       - name: Test ${{ matrix.test-target }}
         shell: bash
         run: |
-          just --set BUILD_DISABLE 1 test ${{ matrix.test-target }}
+          just --shell $(type -p bash) \
+              --set BUILD_DISABLE 1 \
+              test ${{ matrix.test-target }}
 
     #secrets:
     #  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
