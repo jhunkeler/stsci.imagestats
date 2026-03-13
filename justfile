@@ -1,9 +1,14 @@
+export BUILD_CIBUILDWHEEL := "0"
+export BUILD_EDITABLE := "0"
+export BUILD_DISABLE := "0"
+
+export project_name := "stsci.imagestats"
+
 shebang := if os() == 'windows' {
   require('bash.exe')
 } else {
   require('bash')
 }
-#shell := f"{{shebang}} -uc"
 
 venv_python_executable := if os() == 'windows' {
     'python.exe'
@@ -11,28 +16,69 @@ venv_python_executable := if os() == 'windows' {
     'python'
 }
 
-export BUILD_CIBUILDWHEEL := "0"
-export BUILD_EDITABLE := "0"
-export BUILD_DISABLE := "0"
-
-export project_name := "stsci.imagestats"
 export project_dir := if os() == 'windows' {
-    shell('cygpath --windows $1', justfile_directory())
+    shell('cygpath --windows "$1"', justfile_directory())
 } else {
     justfile_directory()
 }
-#export project_dir := justfile_directory()
-export dist_dir := f"{{project_dir}}/dist"
-export test_jail := f"{{project_dir}}/.test_jail"
 
-build_venv_dir := f"{{project_dir}}/.venv/build"
-build_python_cmd := f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
-build_pip_cmd := f"{{build_python_cmd}} -m pip"
+export dist_dir := if os() == 'windows' {
+    shell('cygpath --windows "$1/dist"', project_dir)
+} else {
+    f"{{project_dir}}/dist"
+}
 
-test_venv_dir := f"{{project_dir}}/.venv/test"
-test_python_cmd := f"{{test_venv_dir}}/bin/{{venv_python_executable}}"
-test_pip_cmd := f"{{test_python_cmd}} -m pip"
-test_pytest_cmd := f"{{test_python_cmd}} -m pytest"
+export test_jail := if os() == 'windows' {
+    shell('cygpath --windows "$1/.test_jail"', project_dir)
+} else {
+    f"{{project_dir}}/.test_jail"
+}
+
+build_venv_dir := if os() == 'windows' {
+    shell('cygpath --windows "$1"/.venv/build', project_dir)
+} else {
+    f"{{project_dir}}/.venv/build"
+}
+
+#build_venv_dir := f"{{project_dir}}/.venv/build"
+#build_python_cmd := f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
+#build_pip_cmd := f"{{build_python_cmd}} -m pip"
+
+build_python_cmd := if os() == 'windows' {
+    shell('cygpath --windows "$1/bin/$2"', build_venv_dir, venv_python_executable)
+} else {
+    f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
+}
+
+build_pip_cmd := if os() == 'windows' {
+    shell('cygpath --windows "$1 -m pip"', build_python_cmd)
+} else {
+    f"{{build_python_cmd}} -m pip"
+}
+
+test_venv_dir := if os() == 'windows' {
+    shell('cygpath --windows "$1/.venv/test"', project_dir)
+} else {
+    f"{{project_dir}}/.venv/test"
+}
+
+test_python_cmd := if os() == 'windows' {
+    shell('cygpath --windows "$1/bin/$2"', test_venv_dir, venv_python_executable)
+} else {
+    f"{{test_venv_dir}}/bin/{{venv_python_executable}}"
+}
+
+test_pip_cmd := if os() == 'windows' {
+    shell('cygpath --windows "$1 -m pip"', test_python_cmd)
+} else {
+    f"{{test_python_cmd}} -m pip"
+}
+
+test_pytest_cmd := if os() == 'windows' {
+    shell('cygpath --windows "$1 -m pytest"', test_python_cmd)
+} else {
+    f"{{test_python_cmd}} -m pytest"
+}
 
 default:
     just -l
