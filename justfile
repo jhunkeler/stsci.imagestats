@@ -1,14 +1,10 @@
 shebang := if os() == 'windows' {
-  'bash.exe'
+  require('bash.exe')
 } else {
-  'bash'
+  require('bash')
 }
 
-shell := if os() == 'windows' {
-    ["bash.exe", "-uc"]
-} else {
-    ["bash", "-uc"]
-}
+shell := shebang
 
 venv_python_executable := if os() == 'windows' {
     'python.exe'
