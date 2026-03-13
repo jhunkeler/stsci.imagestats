@@ -4,6 +4,12 @@ shebang := if os() == 'windows' {
   '/usr/bin/env bash'
 }
 
+venv_python_executable := if os() == 'windows' {
+    'python.exe'
+} else {
+    'python'
+}
+
 export BUILD_CIBUILDWHEEL := "0"
 export BUILD_EDITABLE := "0"
 export BUILD_DISABLE := "0"
@@ -14,11 +20,11 @@ export dist_dir := f"{{project_dir}}/dist"
 export test_jail := f"{{project_dir}}/.test_jail"
 
 build_venv_dir := f"{{project_dir}}/.venv/build"
-build_python_cmd := f"{{build_venv_dir}}/bin/python"
+build_python_cmd := f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
 build_pip_cmd := f"{{build_python_cmd}} -m pip"
 
 test_venv_dir := f"{{project_dir}}/.venv/test"
-test_python_cmd := f"{{test_venv_dir}}/bin/python"
+test_python_cmd := f"{{test_venv_dir}}/bin/{{venv_python_executable}}"
 test_pip_cmd := f"{{test_python_cmd}} -m pip"
 test_pytest_cmd := f"{{test_python_cmd}} -m pytest"
 
