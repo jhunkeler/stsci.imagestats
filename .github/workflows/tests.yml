@@ -63,6 +63,7 @@ jobs:
         uses: extractions/setup-just@v3
 
       - name: Test ${{ matrix.test-target }}
+        shell: bash
         run: |
           just --set BUILD_DISABLE 1 test ${{ matrix.test-target }}
 
