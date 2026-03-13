@@ -93,7 +93,7 @@ guess-wheel-triple:
             Darwin)
                 plat=macosx
                 ;;
-            Win*)
+            Win*|MINGW*|CYGWIN*)
                 plat=win
                 ;;
         esac
