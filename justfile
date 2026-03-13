@@ -1,7 +1,13 @@
 shebang := if os() == 'windows' {
   'bash.exe'
 } else {
-  '/usr/bin/env bash'
+  'bash'
+}
+
+shell := if os() == 'windows' {
+    ["bash.exe", "-uc"]
+} else {
+    ["bash", "-uc"]
 }
 
 venv_python_executable := if os() == 'windows' {
