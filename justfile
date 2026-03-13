@@ -1,5 +1,8 @@
-bash := require("bash")
-set shell := ["bash", "-uc"]
+shebang := if os() == 'windows' {
+  'bash.exe'
+} else {
+  '/usr/bin/env bash'
+}
 
 export BUILD_CIBUILDWHEEL := "0"
 export BUILD_EDITABLE := "0"
@@ -48,7 +51,7 @@ dev-deps:
         {{test_pip_cmd}} install --force --upgrade --pre 'numpy>=0.0.dev0'
 
 build: build-clean venv
-    #!/usr/bin/env bash
+    #!{{shebang}}
     set -euxo pipefail
 
     if ([[ "{{BUILD_DISABLE}}" == "1" ]] || [[ "{{BUILD_EDITABLE}}" == "1" ]]); then
@@ -79,7 +82,7 @@ build-clean:
     fi
 
 guess-wheel-triple:
-    #!{{bash}}
+    #!{{shebang}}
     set -euxo pipefail
     guess_wheel_triple() {
         local output=""
@@ -136,7 +139,7 @@ test-deps:
 
 [positional-arguments]
 test +TARGET='x': build test-deps
-    #!{{bash}}
+    #!{{shebang}}
     set -euxo pipefail
 
     mkdir -p "$test_jail"
