@@ -1,3 +1,4 @@
+bash := require("bash")
 set shell := ["bash", "-uc"]
 
 export BUILD_CIBUILDWHEEL := "0"
@@ -78,7 +79,7 @@ build-clean:
     fi
 
 guess-wheel-triple:
-    #!/usr/bin/env bash
+    #!{{bash}}
     set -euxo pipefail
     guess_wheel_triple() {
         local output=""
@@ -135,7 +136,7 @@ test-deps:
 
 [positional-arguments]
 test +TARGET='x': build test-deps
-    #!/usr/bin/env bash
+    #!{{bash}}
     set -euxo pipefail
 
     mkdir -p "$test_jail"
