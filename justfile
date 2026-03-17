@@ -1,13 +1,14 @@
 export BUILD_CIBUILDWHEEL := "0"
 export BUILD_EDITABLE := "0"
 export BUILD_DISABLE := "0"
+export ON_WINDOWS := if os() == "windows" { "yes" } else { "" }
 
 export project_name := "stsci.imagestats"
 
 shebang := if os() == 'windows' {
-  require('bash.exe')
+    shell('cygpath --unix "$1"', require("bash.exe"))
 } else {
-  require('bash')
+    require("bash")
 }
 
 venv_python_executable := if os() == 'windows' {
@@ -17,25 +18,25 @@ venv_python_executable := if os() == 'windows' {
 }
 
 export project_dir := if os() == 'windows' {
-    shell('cygpath --windows "$1"', justfile_directory())
+    shell('cygpath --unix "$1"', justfile_directory())
 } else {
     justfile_directory()
 }
 
 export dist_dir := if os() == 'windows' {
-    shell('cygpath --windows "$1/dist"', project_dir)
+    shell('cygpath --unix "$1/dist"', project_dir)
 } else {
     f"{{project_dir}}/dist"
 }
 
 export test_jail := if os() == 'windows' {
-    shell('cygpath --windows "$1/.test_jail"', project_dir)
+    shell('cygpath --unix "$1/.test_jail"', project_dir)
 } else {
     f"{{project_dir}}/.test_jail"
 }
 
 build_venv_dir := if os() == 'windows' {
-    shell('cygpath --windows "$1"/.venv/build', project_dir)
+    shell('cygpath --unix "$1"/.venv/build', project_dir)
 } else {
     f"{{project_dir}}/.venv/build"
 }
@@ -45,37 +46,37 @@ build_venv_dir := if os() == 'windows' {
 #build_pip_cmd := f"{{build_python_cmd}} -m pip"
 
 build_python_cmd := if os() == 'windows' {
-    shell('cygpath --windows "$1/bin/$2"', build_venv_dir, venv_python_executable)
+    shell('cygpath --unix "$1/Scripts/$2"', build_venv_dir, venv_python_executable)
 } else {
     f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
 }
 
 build_pip_cmd := if os() == 'windows' {
-    shell('cygpath --windows "$1 -m pip"', build_python_cmd)
+    shell('cygpath --unix "$1 -m pip"', build_python_cmd)
 } else {
     f"{{build_python_cmd}} -m pip"
 }
 
 test_venv_dir := if os() == 'windows' {
-    shell('cygpath --windows "$1/.venv/test"', project_dir)
+    shell('cygpath --unix "$1/.venv/test"', project_dir)
 } else {
     f"{{project_dir}}/.venv/test"
 }
 
 test_python_cmd := if os() == 'windows' {
-    shell('cygpath --windows "$1/bin/$2"', test_venv_dir, venv_python_executable)
+    shell('cygpath --unix "$1/Scripts/$2"', test_venv_dir, venv_python_executable)
 } else {
     f"{{test_venv_dir}}/bin/{{venv_python_executable}}"
 }
 
 test_pip_cmd := if os() == 'windows' {
-    shell('cygpath --windows "$1 -m pip"', test_python_cmd)
+    shell('cygpath --unix "$1 -m pip"', test_python_cmd)
 } else {
     f"{{test_python_cmd}} -m pip"
 }
 
 test_pytest_cmd := if os() == 'windows' {
-    shell('cygpath --windows "$1 -m pytest"', test_python_cmd)
+    shell('cygpath --unix "$1 -m pytest"', test_python_cmd)
 } else {
     f"{{test_python_cmd}} -m pytest"
 }
@@ -144,8 +145,8 @@ guess-wheel-triple:
     set -euxo pipefail
     guess_wheel_triple() {
         local output=""
-        local plat_real=$(uname -s)
-        local arch_real=$(uname -m)
+        local plat_real="$(uname -s)"
+        local arch_real="$(uname -m)"
         local arch="$arch_real"
         local plat="$plat_real"
         case "$plat_real" in
@@ -160,8 +161,8 @@ guess-wheel-triple:
                 ;;
         esac
 
-        arch="$arch_real"
-        case "$arch_real" in
+        arch="${arch_real}"
+        case "${arch_real}" in
             i*86)
                 arch=32
                 ;;
@@ -169,14 +170,14 @@ guess-wheel-triple:
 
         case "$plat" in
             linux|macosx)
-                output="*$plat*_*$arch"
+                output="*${plat}*_*${arch}"
                 ;;
             win)
                 if [[ "$arch" == "x86_64" ]]; then
-                    plat=amd64
-                    output="*$plat_$arch"
+                    arch=amd64
+                    output="*${plat}_${arch}"
                 elif [[ "$arch" == "32" ]]; then
-                    output="*$plat$arch"
+                    output="*${plat}${arch}"
                 fi
                 ;;
         esac
@@ -186,14 +187,34 @@ guess-wheel-triple:
 
 
 test-deps:
+    set -x; \
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
         {{test_pip_cmd}} install -e ${project_dir}[test]; \
     else \
         guess=$(just -q guess-wheel-triple); \
         echo "GUESS: $guess"; \
-        fn=$(find {{dist_dir}} -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
-        {{test_pip_cmd}} install --force-reinstall "$fn"[test]; \
+        if [[ "${ON_WINDOWS}" ]]; then \
+            fn=$(find "{{justfile_directory()}}\\dist" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
+        else \
+            fn=$(find "{{dist_dir}}" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
+        fi; \
+        {{test_pip_cmd}} install --force-reinstall "$fn[test]"; \
     fi
+
+guess-site-packages python='python':
+    #!{{python}}
+    import site
+    for x in site.getsitepackages():
+        if x.endswith('site-packages'):
+            print(x)
+            break
+
+guess-package-path python='python' package='':
+    #!{{python}}
+    import os
+    import {{package}}
+    print(os.path.normpath(os.path.dirname({{package}}.__file__)))
+
 
 [positional-arguments]
 test +TARGET='x': build test-deps
@@ -204,11 +225,15 @@ test +TARGET='x': build test-deps
     cd "$test_jail"
     export HOME="$test_jail"
 
-    site_packages=$({{test_python_cmd}} -c 'import site; print(site.getsitepackages()[0])')
+    export site_packages="$(just guess-site-packages {{test_python_cmd}})"
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then
         install_dir="${project_dir}"/src
     else
-        install_dir="${site_packages}"/stsci/imagestats
+        if [[ "ON_WINDOWS" ]]; then
+            install_dir="$(cygpath --unix $(just guess-package-path {{test_python_cmd}} {{project_name}}))"
+        else
+            install_dir="$(just guess-package-path {{test_python_cmd}} {{project_name}})"
+        fi
     fi
 
     args=(
@@ -232,7 +257,7 @@ test +TARGET='x': build test-deps
         just ${target}-deps
     done
 
-    {{test_pytest_cmd}} ${args[@]} ${install_dir}
+    {{test_pytest_cmd}} ${args[@]} "${install_dir}"
 
 test-clean:
     rm -f coverage.xml
