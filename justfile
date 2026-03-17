@@ -193,7 +193,7 @@ test-deps:
     else \
         guess=$(just -q guess-wheel-triple); \
         echo "GUESS: $guess"; \
-        if [[ "${ON_WINDOWS}" == "yes" ]]; then \
+        if [[ "${ON_WINDOWS}" ]]; then \
             fn=$(find "{{justfile_directory()}}\\dist" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
         else \
             fn=$(find "{{dist_dir}}" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
@@ -229,7 +229,7 @@ test +TARGET='x': build test-deps
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then
         install_dir="${project_dir}"/src
     else
-        if [[ "ON_WINDOWS" == "yes"]]; then
+        if [[ "${ON_WINDOWS}" ]]; then
             install_dir="$(cygpath --unix $(just guess-package-path {{test_python_cmd}} {{project_name}}))"
         else
             install_dir="$(just guess-package-path {{test_python_cmd}} {{project_name}})"
