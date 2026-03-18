@@ -259,7 +259,7 @@ test +TARGET='': build test-install-deps
             )
         fi
 
-        just ${target}-install-deps
+        just test-deps-${target}
     done
 
     set -x
