@@ -203,7 +203,7 @@ test-install-deps:
     else
         triple=$(just -q guess-wheel-triple)
         if [[ "${ON_WINDOWS}" ]]; then
-            fn=$(just guess-wheel-latest "{{shell('cygpath --unix "$1"', dist_dir)}}"/${triple}.whl)
+            fn=$(just guess-wheel-latest "${dist_dir}"/${triple}.whl)
         else
             fn=$(just guess-wheel-latest "{{dist_dir}}"/${triple}.whl)
         fi
