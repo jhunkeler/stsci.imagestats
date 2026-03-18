@@ -131,7 +131,7 @@ build: build-clean venv
     fi
 
 build-clean:
-    if [[ "{{BUILD_DISABLE}}" ]]; then \
+    if [[ -z "{{BUILD_DISABLE}}" ]]; then \
         rm -rf "$dist_dir"; \
         rm -rf "$project_dir"/*.egg-info; \
         rm -rf "$project_dir"/build; \
