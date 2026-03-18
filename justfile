@@ -142,7 +142,7 @@ build-clean:
 
 guess-wheel-triple:
     #!{{shebang}}
-    set -euxo pipefail
+    set -euo pipefail
     guess_wheel_triple() {
         local output=""
         local plat_real="$(uname -s)"
@@ -187,7 +187,6 @@ guess-wheel-triple:
 
 
 test-deps:
-    set -x; \
     if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
         {{test_pip_cmd}} install -e ${project_dir}[test]; \
     else \
@@ -201,14 +200,6 @@ test-deps:
         {{test_pip_cmd}} install --force-reinstall "$fn[test]"; \
     fi
 
-guess-site-packages python='python':
-    #!{{python}}
-    import site
-    for x in site.getsitepackages():
-        if x.endswith('site-packages'):
-            print(x)
-            break
-
 guess-package-path python='python' package='':
     #!{{python}}
     import os
@@ -217,7 +208,7 @@ guess-package-path python='python' package='':
 
 
 [positional-arguments]
-test +TARGET='x': build test-deps
+test +TARGET='': build test-deps
     #!{{shebang}}
     set -euxo pipefail
 
@@ -225,15 +216,9 @@ test +TARGET='x': build test-deps
     cd "$test_jail"
     export HOME="$test_jail"
 
-    export site_packages="$(just guess-site-packages {{test_python_cmd}})"
-    if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then
-        install_dir="${project_dir}"/src
-    else
-        if [[ "${ON_WINDOWS}" ]]; then
-            install_dir="$(cygpath --unix $(just guess-package-path {{test_python_cmd}} {{project_name}}))"
-        else
-            install_dir="$(just guess-package-path {{test_python_cmd}} {{project_name}})"
-        fi
+    install_dir="$(just guess-package-path {{test_python_cmd}} {{project_name}})"
+    if [[ "${ON_WINDOWS}" ]]; then
+        install_dir="$(cygpath --unix $(just guess-package-path {{test_python_cmd}} {{project_name}}))"
     fi
 
     args=(
