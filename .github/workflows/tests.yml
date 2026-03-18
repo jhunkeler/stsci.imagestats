@@ -18,6 +18,9 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
+      - name: Install Just
+        uses: extractions/setup-just@v3
+
       - name: Install Ruff
         uses: astral-sh/ruff-action@v3
 
@@ -28,6 +31,9 @@ jobs:
   bandit:
     runs-on: ubuntu-latest
     steps:
+      - name: Install Just
+        uses: extractions/setup-just@v3
+
       - name: Bandit
         run: |
           just bandit --skip B101
