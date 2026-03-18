@@ -199,13 +199,13 @@ test-install-deps:
     #!{{shebang}}
     set -euo pipefail
     if [[ "{{BUILD_EDITABLE}}" ]]; then
-        {{test_pip_cmd}} install -e ${project_dir}[test];
+        {{test_pip_cmd}} install -e ${project_dir}[test]
     else
-        guess=$(just -q guess-wheel-triple)
+        triple=$(just -q guess-wheel-triple)
         if [[ "${ON_WINDOWS}" ]]; then
-            fn=$(just guess-wheel-latest "{{justfile_directory()}}\\dist\\*.whl")
+            fn=$(just guess-wheel-latest "{{justfile_directory()}}\\dist\\${triple}.whl")
         else
-            fn=$(just guess-wheel-latest "{{dist_dir}}"/*.whl)
+            fn=$(just guess-wheel-latest "{{dist_dir}}"/${triple}.whl)
         fi
         {{test_pip_cmd}} install --force-reinstall "$fn[test]"
     fi
