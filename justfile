@@ -1,7 +1,8 @@
-export BUILD_CIBUILDWHEEL := "0"
-export BUILD_EDITABLE := "0"
-export BUILD_DISABLE := "0"
-export ON_WINDOWS := if os() == "windows" { "yes" } else { "" }
+export BUILD_CIBUILDWHEEL := ""
+export BUILD_EDITABLE := ""
+export BUILD_DISABLE := ""
+export ON_WINDOWS := if os() == "windows" { "ON WINDOWS" } else { "" }
+export ON_MACOS := if os() == "macos" { "ON MACOS" } else { "" }
 
 export project_name := "stsci.imagestats"
 
@@ -40,10 +41,6 @@ build_venv_dir := if os() == 'windows' {
 } else {
     f"{{project_dir}}/.venv/build"
 }
-
-#build_venv_dir := f"{{project_dir}}/.venv/build"
-#build_python_cmd := f"{{build_venv_dir}}/bin/{{venv_python_executable}}"
-#build_pip_cmd := f"{{build_python_cmd}} -m pip"
 
 build_python_cmd := if os() == 'windows' {
     shell('cygpath --unix "$1/Scripts/$2"', build_venv_dir, venv_python_executable)
@@ -96,16 +93,16 @@ venv-clean:
     rm -rf {{build_venv_dir}}
     rm -rf {{test_venv_dir}}
 
-cov-deps:
+cov-install-deps:
     {{test_pip_cmd}} install pytest-cov
 
-numpy122-deps:
+numpy122-install-deps:
     {{test_pip_cmd}} install 'numpy==1.22.*'
 
-numpy125-deps:
+numpy125-install-deps:
     {{test_pip_cmd}} install 'numpy==1.25.*'
 
-dev-deps:
+dev-install-deps:
     export PIP_EXTRA_INDEX_URL="https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"; \
         {{test_pip_cmd}} install --force --upgrade --pre 'numpy>=0.0.dev0'
 
@@ -113,32 +110,43 @@ build: build-clean venv
     #!{{shebang}}
     set -euxo pipefail
 
-    if ([[ "{{BUILD_DISABLE}}" == "1" ]] || [[ "{{BUILD_EDITABLE}}" == "1" ]]); then
-        :
-    else
-        if [[ "{{BUILD_CIBUILDWHEEL}}" == "1" ]]; then
-            if ! docker ps &>/dev/null; then
-                echo "Cannot use cibuildwheel because Docker is either not installed, or broken" >&2
-                exit 1
-            fi
-            {{build_pip_cmd}} install cibuildwheel
-            v=$({{build_python_cmd}} -V | awk '{ print $2 }')
-            v_compact=$(echo "${v%.*}" | tr -d '.')
-            manylinux_target=cp${v_compact}-manylinux_{{arch()}}
+    if ([[ "{{BUILD_DISABLE}}" ]] || [[ "{{BUILD_EDITABLE}}" ]]); then
+        exit 0
+    fi
 
-            {{build_python_cmd}} -m cibuildwheel --output-dir "$dist_dir" --only "${manylinux_target}"
-        else
-            {{build_pip_cmd}} install build wheel
-            {{build_python_cmd}} -m build -w $project_dir
+    if [[ "{{BUILD_CIBUILDWHEEL}}" ]]; then
+        if ! docker ps &>/dev/null; then
+            echo "Cannot use cibuildwheel because Docker is either not installed, or broken" >&2
+            exit 1
         fi
+        {{build_pip_cmd}} install cibuildwheel
+        v=$({{build_python_cmd}} -V | awk '{ print $2 }')
+        v_compact=$(echo "${v%.*}" | tr -d '.')
+        manylinux_target=cp${v_compact}-manylinux_{{arch()}}
+
+        {{build_python_cmd}} -m cibuildwheel --output-dir "$dist_dir" --only "${manylinux_target}"
+    else
+        {{build_pip_cmd}} install build wheel
+        {{build_python_cmd}} -m build -w $project_dir
     fi
 
 build-clean:
-    if [[ "{{BUILD_DISABLE}}" == "0" ]]; then \
+    if [[ "{{BUILD_DISABLE}}" ]]; then \
         rm -rf "$dist_dir"; \
         rm -rf "$project_dir"/*.egg-info; \
         rm -rf "$project_dir"/build; \
     fi
+
+guess-wheel-latest +files:
+    #!{{shebang}}
+    set -euo pipefail
+    fmt_arg='-c'
+    fmt='%Y %n'
+    if [[ "${ON_MACOS}" ]]; then
+        fmt_arg='-f'
+        fmt='%m %N'
+    fi
+    stat ${fmt_arg} "${fmt}" {{files}} | sort -rn | head -n 1 | cut -d ' ' -f 2-
 
 guess-wheel-triple:
     #!{{shebang}}
@@ -186,31 +194,44 @@ guess-wheel-triple:
     guess_wheel_triple
 
 
-test-deps:
-    if [[ "{{BUILD_EDITABLE}}" == "1" ]]; then \
-        {{test_pip_cmd}} install -e ${project_dir}[test]; \
-    else \
-        guess=$(just -q guess-wheel-triple); \
-        echo "GUESS: $guess"; \
-        if [[ "${ON_WINDOWS}" ]]; then \
-            fn=$(find "{{justfile_directory()}}\\dist" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
-        else \
-            fn=$(find "{{dist_dir}}" -name ''$guess.whl'' || echo {{dist_dir}}/'*.whl'); \
-        fi; \
-        {{test_pip_cmd}} install --force-reinstall "$fn[test]"; \
+
+test-install-deps:
+    #!{{shebang}}
+    set -euo pipefail
+    if [[ "{{BUILD_EDITABLE}}" ]]; then
+        {{test_pip_cmd}} install -e ${project_dir}[test];
+    else
+        guess=$(just -q guess-wheel-triple)
+        if [[ "${ON_WINDOWS}" ]]; then
+            fn=$(just guess-wheel-latest "{{justfile_directory()}}\\dist\\*.whl")
+        else
+            fn=$(just guess-wheel-latest "{{dist_dir}}"/*.whl)
+        fi
+        {{test_pip_cmd}} install --force-reinstall "$fn[test]"
     fi
 
-guess-package-path python='python' package='':
+guess-package-path python='python3' package='doesnotexist':
     #!{{python}}
+    import importlib
     import os
-    import {{package}}
-    print(os.path.normpath(os.path.dirname({{package}}.__file__)))
+    import sys
 
+    package = "{{package}}"
+    if not package or package == "doesnotexist":
+        print("package argument cannot be empty", file=sys.stderr)
+        exit(1)
+
+    try:
+        module = importlib.import_module(package)
+        print(os.path.normpath(os.path.dirname(module.__file__)))
+    except Exception as e:
+        print(f"{__file__}: invalid package: '{package}' ({e})", file=sys.stderr)
+        exit(2)
 
 [positional-arguments]
-test +TARGET='': build test-deps
+test +TARGET='': build test-install-deps
     #!{{shebang}}
-    set -euxo pipefail
+    set -euo pipefail
 
     mkdir -p "$test_jail"
     cd "$test_jail"
@@ -239,9 +260,10 @@ test +TARGET='': build test-deps
             )
         fi
 
-        just ${target}-deps
+        just ${target}-install-deps
     done
 
+    set -x
     {{test_pytest_cmd}} ${args[@]} "${install_dir}"
 
 test-clean:
