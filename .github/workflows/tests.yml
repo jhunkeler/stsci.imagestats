@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ruff:
+  analyze:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -32,25 +32,15 @@ jobs:
         run: |
           just ruff-check -e
 
-  bandit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Install Just
-        uses: extractions/setup-just@v3
-
       - name: Bandit
         run: |
           just bandit --skip B101
 
   build:
-    needs: [ruff, bandit]
+    needs: [analyze]
     uses: ./.github/workflows/build.yml
 
-  tests:
+  test:
     runs-on: ${{ matrix.os }}
     needs: [build]
 
